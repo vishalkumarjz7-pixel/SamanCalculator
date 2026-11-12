@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saman Calculator</title>
+<style>
+:root{--bg:#fffaf0;--card:#fff;--tx:#1f1b16;--mut:#7a7165;--ac:#d97706;--acx:#fff;--bd:#eadfce;--ok:#166534;--okbg:#dcfce7;--rd:#b91c1c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#17130f;--card:#241e17;--tx:#f5efe6;--mut:#a69b8c;--ac:#f59e0b;--acx:#1a1100;--bd:#3a3023;--ok:#bbf7d0;--okbg:#14532d;--rd:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+.w{max-width:480px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}
+input,select{width:100%;font-size:22px;padding:12px;border-radius:12px;border:2px solid var(--bd);background:var(--bg);color:var(--tx);font-weight:600}
+input:focus,select:focus{outline:none;border-color:var(--ac)}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1;padding:12px 6px;font-size:15px;border-radius:12px;border:2px solid var(--bd);background:var(--card);color:var(--tx);font-weight:600}
+.tabs button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{padding:9px 14px;border-radius:999px;border:2px solid var(--bd);background:var(--bg);color:var(--tx);font-size:16px;font-weight:600}
+.chips button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.chips button.add{border-style:dashed;color:var(--ac)}
+.q{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.q button{padding:8px 14px;border-radius:999px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:15px}
+.res{background:var(--okbg);color:var(--ok);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
+.res .big{font-size:36px;font-weight:700}
+.res .sm{font-size:14px;margin-top:4px}
+.row{display:flex;align-items:center;gap:8px}
+.row span{font-size:18px;color:var(--mut);white-space:nowrap}
+.link{background:none;border:none;color:var(--rd);font-size:14px;margin-top:12px;padding:0}
+.go{width:100%;padding:12px;border-radius:12px;border:none;background:var(--ac);color:var(--acx);font-size:17px;font-weight:700;margin-top:12px}
+.f{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>🛒 Saman Calculator</h1>
+
+  <div class="card">
+    <label>Saman chuniye</label>
+    <div class="chips" id="items"></div>
+  </div>
+
+  <div class="card" id="addBox" hidden>
+    <div class="f"><label>Saman ka naam</label><input id="nn" type="text" placeholder="jaise Paneer"></div>
+    <div class="f"><label>Rate (₹)</label><input id="nr" type="number" inputmode="decimal" placeholder="jaise 360"></div>
+    <div class="f"><label>Rate kis hisaab se?</label>
+      <select id="nu"><option value="kg">per 1 kg</option><option value="L">per 1 litre</option></select></div>
+    <button class="go" id="save">Save karein</button>
+  </div>
+
+  <div id="main" hidden>
+    <div class="card">
+      <label id="rl">Rate</label>
+      <div class="row"><span>₹</span><input id="rate" type="number" inputmode="decimal"></div>
+      <button class="link" id="del">Is saman ko hatayein</button>
+    </div>
+
+    <div class="tabs">
+      <button id="t1" class="on">₹ → Gram</button>
+      <button id="t2">Gram → ₹</button>
+    </div>
+
+    <div class="card">
+      <label id="lbl"></label>
+      <input id="val" type="number" inputmode="decimal">
+      <div class="q" id="quick"></div>
+      <div class="res" id="res" hidden>
+        <div class="big" id="big"></div>
+        <div class="sm" id="sm"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)};
+var items=[{n:'Paneer',r:360,u:'kg'}], cur=0, mode=1;
+try{var s=JSON.parse(localStorage.getItem('samanItems')); if(s&&s.length) items=s;}catch(e){}
+function persist(){try{localStorage.setItem('samanItems',JSON.stringify(items));}catch(e){}}
+function fmt(n,d){var k=Math.pow(10,d);return (Math.round(n*k)/k).toString();}
+function unit(){return items[cur].u==='L'?'ml':'gram';}
+function drawItems(){
+  var c=$('items'); c.innerHTML='';
+  items.forEach(function(it,i){
+    var b=document.createElement('button'); b.textContent=it.n; b.className=i===cur?'on':'';
+    b.onclick=function(){cur=i;$('addBox').hidden=true;select();}; c.appendChild(b);
+  });
+  var a=document.createElement('button'); a.textContent='+ Naya saman'; a.className='add';
+  a.onclick=function(){$('addBox').hidden=!$('addBox').hidden;}; c.appendChild(a);
+}
+function select(){
+  drawItems();
+  if(!items.length){$('main').hidden=true;return;}
+  $('main').hidden=false;
+  var it=items[cur];
+  $('rl').textContent=it.n+' ka rate (₹ per 1 '+(it.u==='L'?'litre':'kg')+')';
+  $('rate').value=it.r;
+  setMode(mode);
+}
+function calc(){
+  if(!items.length)return;
+  var r=parseFloat($('rate').value), v=parseFloat($('val').value), res=$('res');
+  if(r>0){items[cur].r=r;persist();}
+  if(!(r>0)||!(v>0)){res.hidden=true;return;}
+  var perG=r/1000, nm=items[cur].n, un=unit();
+  if(mode===1){
+    var g=v/perG;
+    $('big').textContent=fmt(g,0)+' '+un;
+    $('sm').textContent='₹'+fmt(v,2)+' mein '+fmt(g,1)+' '+(un==='ml'?'ml':'g')+' '+nm;
+  }else{
+    var p=v*perG;
+    $('big').textContent='₹ '+fmt(p,2);
+    $('sm').textContent=fmt(v,0)+' '+(un==='ml'?'ml':'g')+' '+nm+' ka daam ≈ ₹'+Math.round(p);
+  }
+  res.hidden=false;
+}
+function setMode(m){
+  mode=m; var un=unit();
+  $('t1').className=m===1?'on':''; $('t2').className=m===2?'on':'';
+  $('t1').textContent=un==='ml'?'₹ → ml':'₹ → Gram';
+  $('t2').textContent=un==='ml'?'ml → ₹':'Gram → ₹';
+  $('lbl').textContent=m===1?'Customer kitne ₹ ka '+items[cur].n+' maang raha hai?':'Customer kitne '+un+' '+items[cur].n+' maang raha hai?';
+  $('val').placeholder=m===1?'jaise 100':'jaise 250'; $('val').value='';
+  var q=$('quick'); q.innerHTML='';
+  var small=un==='ml'?'ml':'g';
+  (m===1?[20,50,100,200,500]:[50,100,250,500,1000]).forEach(function(n){
+    var b=document.createElement('button');
+    b.textContent=m===1?'₹'+n:(n>=1000?(small==='ml'?'1 L':'1 kg'):n+' '+small);
+    b.onclick=function(){$('val').value=n;calc();}; q.appendChild(b);
+  });
+  calc();
+}
+$('rate').addEventListener('input',calc);
+$('val').addEventListener('input',calc);
+$('t1').onclick=function(){setMode(1)};
+$('t2').onclick=function(){setMode(2)};
+$('save').onclick=function(){
+  var n=$('nn').value.trim(), r=parseFloat($('nr').value);
+  if(!n||!(r>0)){alert('Naam aur rate daaliye');return;}
+  items.push({n:n,r:r,u:$('nu').value}); cur=items.length-1; persist();
+  $('nn').value='';$('nr').value='';$('addBox').hidden=true; select();
+};
+$('del').onclick=function(){
+  if(!confirm(items[cur].n+' hata dein?'))return;
+  items.splice(cur,1); cur=0; persist(); select();
+};
+select();
+</script>
+</body>
+</html>
